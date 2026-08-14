@@ -125,6 +125,9 @@ appsettings.*.local.json
 .env
 secrets.json
 
+# VS Code editor settings (machine-local preferences)
+.vscode/
+
 # Visual Studio Trace Files
 *.e2e
 
