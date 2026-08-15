@@ -7,8 +7,16 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Stripe;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Ensure consistent currency & number formatting across environments.
+// Without this, Linux/App Service falls back to the invariant culture and prices render as "¤99.00".
+// Change to "en-NG" for ₦ or "en-ZA" for R if preferred.
+var appCulture = new CultureInfo("en-NG");
+CultureInfo.DefaultThreadCurrentCulture = appCulture;
+CultureInfo.DefaultThreadCurrentUICulture = appCulture;
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
