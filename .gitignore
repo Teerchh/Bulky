@@ -125,6 +125,10 @@ appsettings.*.local.json
 .env
 secrets.json
 
+# Azure publish profiles - contain deployment credentials, NEVER commit.
+*.PublishSettings
+*.publishsettings
+
 # VS Code editor settings (machine-local preferences)
 .vscode/
 

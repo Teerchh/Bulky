@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: bulky        # TODO: change to your Azure App Service name
+  AZURE_WEBAPP_NAME: bulky-eva5a3ajahd2b9hb
   AZURE_WEBAPP_PACKAGE_PATH: './publish'
   CONFIGURATION: Release
   DOTNET_VERSION: '10.0.x'
