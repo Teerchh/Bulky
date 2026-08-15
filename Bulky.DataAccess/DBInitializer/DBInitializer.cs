@@ -40,10 +40,15 @@ public class DBInitializer(UserManager<IdentityUser> userManager, RoleManager<Id
         {
             var user = new ApplicationUser { UserName = adminEmail, Email = adminEmail, Name = "Administrator", PhoneNumber = "1234567890", StreetAddress = "admin av", State = "OYO", PostalCode = "200005", City = "IB" };
             var createResult = userManager.CreateAsync(user, adminPassword).GetAwaiter().GetResult();
-            //only assign the role if the user was actually created (never let a failure crash startup)
+            //re-fetch the user from the DB so the role link uses the persisted row
+            //(avoids the FK violation on AspNetUserRoles when seeding a brand-new user)
             if (createResult.Succeeded)
             {
-                userManager.AddToRoleAsync(user, SD.Role_Admin).GetAwaiter().GetResult();
+                var persistedUser = userManager.FindByEmailAsync(adminEmail).GetAwaiter().GetResult();
+                if (persistedUser != null)
+                {
+                    userManager.AddToRoleAsync(persistedUser, SD.Role_Admin).GetAwaiter().GetResult();
+                }
             }
         }
 
