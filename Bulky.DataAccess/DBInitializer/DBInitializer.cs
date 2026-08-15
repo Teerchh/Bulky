@@ -39,8 +39,12 @@ public class DBInitializer(UserManager<IdentityUser> userManager, RoleManager<Id
         if (adminUser == null)
         {
             var user = new ApplicationUser { UserName = adminEmail, Email = adminEmail, Name = "Administrator", PhoneNumber = "1234567890", StreetAddress = "admin av", State = "OYO", PostalCode = "200005", City = "IB" };
-            userManager.CreateAsync(user, adminPassword).GetAwaiter().GetResult();
-            userManager.AddToRoleAsync(user, SD.Role_Admin).GetAwaiter().GetResult();
+            var createResult = userManager.CreateAsync(user, adminPassword).GetAwaiter().GetResult();
+            //only assign the role if the user was actually created (never let a failure crash startup)
+            if (createResult.Succeeded)
+            {
+                userManager.AddToRoleAsync(user, SD.Role_Admin).GetAwaiter().GetResult();
+            }
         }
 
         return;
