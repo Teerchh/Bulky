@@ -4,10 +4,11 @@ using Bulky.Utility;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Bulky.DataAccess.DBInitializer;
 
-public class DBInitializer(UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager, ApplicationDbContext db, IConfiguration configuration) : IDBInitializer
+public class DBInitializer(UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager, ApplicationDbContext db, IConfiguration configuration, ILogger<DBInitializer> logger) : IDBInitializer
 {
     public void Initialize()
     {
@@ -49,6 +50,11 @@ public class DBInitializer(UserManager<IdentityUser> userManager, RoleManager<Id
                 {
                     userManager.AddToRoleAsync(persistedUser, SD.Role_Admin).GetAwaiter().GetResult();
                 }
+            }
+            else
+            {
+                logger.LogWarning("Failed to create admin user '{Email}': {Errors}",
+                    adminEmail, string.Join("; ", createResult.Errors.Select(e => e.Description)));
             }
         }
 
