@@ -129,6 +129,9 @@ secrets.json
 *.PublishSettings
 *.publishsettings
 
+# Uploaded product images - managed via Azure Blob Storage, not git.
+BulkyBookWeb/wwwroot/images/products/
+
 # VS Code editor settings (machine-local preferences)
 .vscode/
 
