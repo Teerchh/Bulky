@@ -2,6 +2,7 @@
 using Bulky.Models;
 using Bulky.Models.ViewModels;
 using Bulky.Utility;
+using BulkyBookWeb.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -10,7 +11,7 @@ namespace BulkyBookWeb.Areas.Admin.Controllers;
 
 [Area("Admin")]
 [Authorize(Roles = SD.Role_Admin)]
-public class ProductController(IUnitOfWork unit, IWebHostEnvironment webHost) : Controller
+public class ProductController(IUnitOfWork unit, IWebHostEnvironment webHost, IStorageService storage) : Controller
 {
     public IActionResult Index()
     {
@@ -45,7 +46,7 @@ public class ProductController(IUnitOfWork unit, IWebHostEnvironment webHost) : 
     }
 
     [HttpPost]
-    public IActionResult Upsert([Bind(Prefix = "Product")] Product product, IEnumerable<IFormFile>? files)
+    public async Task<IActionResult> Upsert([Bind(Prefix = "Product")] Product product, IEnumerable<IFormFile>? files)
     {
         if (ModelState.IsValid)
         {
@@ -63,29 +64,16 @@ public class ProductController(IUnitOfWork unit, IWebHostEnvironment webHost) : 
             }
             unit.Save();
 
-
-            string wwwRootPath = webHost.WebRootPath;
-
             if (files != null)
             {
 
                 foreach (var file in files)
                 {
-                    string filename = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-                    string productPath = @"images\products\product~" + product.Id;
-                    string finalPath = Path.Combine(wwwRootPath, productPath);
-
-                    if (!Directory.Exists(finalPath))
-                    {
-                        Directory.CreateDirectory(finalPath);
-                    }
-
-                    using var fileStream = new FileStream(Path.Combine(finalPath, filename), FileMode.Create);
-                    file.CopyTo(fileStream);
+                    var imageUrl = await storage.SaveImageAsync(file, "product~" + product.Id);
 
                     var productImage = new ProductImage()
                     {
-                        ImageUrl = @"\" + productPath + @"\" + filename,
+                        ImageUrl = imageUrl,
                         ProductId = product.Id,
                     };
 
@@ -145,22 +133,13 @@ public class ProductController(IUnitOfWork unit, IWebHostEnvironment webHost) : 
         return View(productVM);
     }
 
-    public IActionResult DeleteImage(int imageId)
+    public async Task<IActionResult> DeleteImage(int imageId)
     {
         var image = unit.ProductImage.Get(u => u.Id == imageId);
         var productid = image.ProductId;
         if (image != null)
         {
-            if (!string.IsNullOrEmpty(image.ImageUrl))
-            {
-                var oldImagePath = Path.Combine(webHost.WebRootPath,
-                    image.ImageUrl.TrimStart('\\'));
-
-                if (System.IO.File.Exists(oldImagePath))
-                {
-                    System.IO.File.Delete(oldImagePath);
-                }
-            }
+            await storage.DeleteAsync(image.ImageUrl);
 
             unit.ProductImage.Remove(image);
             unit.Save();
@@ -181,26 +160,29 @@ public class ProductController(IUnitOfWork unit, IWebHostEnvironment webHost) : 
 
 
     [HttpDelete]
-    public IActionResult Delete(int? id)
+    public async Task<IActionResult> Delete(int? id)
     {
-        var product = unit.Product.Get(u => u.Id == id);
+        var product = unit.Product.Get(u => u.Id == id, includeProperties: "ProductImages");
         if (product == null)
         {
             return Json(new { success = false, message = "Error while deleting" });
         }
 
+        // delete every image (blob or local)
+        if (product.ProductImages != null)
+        {
+            foreach (var image in product.ProductImages)
+            {
+                await storage.DeleteAsync(image.ImageUrl);
+            }
+        }
 
+        // clean up any leftover local folder from older uploads
         string productPath = @"images\products\product~" + id;
         string finalPath = Path.Combine(webHost.WebRootPath, productPath);
-
         if (Directory.Exists(finalPath))
         {
-            var files = Directory.GetFiles(finalPath);
-            foreach (var file in files)
-            {
-                System.IO.File.Delete(file);
-            }
-            Directory.Delete(finalPath);
+            Directory.Delete(finalPath, true);
         }
 
         unit.Product.Remove(product);

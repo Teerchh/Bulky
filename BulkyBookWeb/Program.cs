@@ -3,6 +3,7 @@ using Bulky.DataAccess.DBInitializer;
 using Bulky.DataAccess.Repository;
 using Bulky.DataAccess.Repository.IRepository;
 using Bulky.Utility;
+using BulkyBookWeb.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +27,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql
 
 //injects values of stripe in appsettings.json into stripesettings properties
 builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
+
+//injects storage settings (Azure Blob Storage) into StorageSettings
+builder.Services.Configure<StorageSettings>(builder.Configuration.GetSection("Storage"));
 
 //add identity
 builder.Services.AddIdentity<IdentityUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
@@ -62,6 +66,7 @@ builder.Services.AddSession(options =>
 builder.Services.AddScoped<IDBInitializer, DBInitializer>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IEmailSender, EmailSender>();
+builder.Services.AddScoped<IStorageService, StorageService>();
 
 var app = builder.Build();
 
