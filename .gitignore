@@ -132,6 +132,9 @@ secrets.json
 # Uploaded product images - managed via Azure Blob Storage, not git.
 BulkyBookWeb/wwwroot/images/products/
 
+# Private improvement notes - not part of the public portfolio repo.
+Improvements.md
+
 # VS Code editor settings (machine-local preferences)
 .vscode/
 
