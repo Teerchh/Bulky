@@ -9,7 +9,7 @@
                     <div class="card border-0 p-3 shadow border-top border-5 rounded">
                         @if(product.ProductImages != null && product.ProductImages.Count() > 0)
                         {
-                            <img src="@product.ProductImages.FirstOrDefault().ImageUrl" class="card-img-top rounded" />
+                            <img src="@product.ProductImages[0].ImageUrl" class="card-img-top rounded" />
                         }
                         else
                         {
