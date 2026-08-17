@@ -10,16 +10,31 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Stripe;
+using Microsoft.AspNetCore.Localization;
 using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Ensure consistent currency & number formatting across environments.
-// Without this, Linux/App Service falls back to the invariant culture and prices render as "¤99.00".
-// Change to "en-NG" for ₦ or "en-ZA" for R if preferred.
-var appCulture = new CultureInfo("en-NG");
-CultureInfo.DefaultThreadCurrentCulture = appCulture;
-CultureInfo.DefaultThreadCurrentUICulture = appCulture;
+// Request-based localization: the culture is picked per request (browser Accept-Language / ?culture= / cookie),
+// so storefront prices convert from the base currency (USD) to the visitor's currency via CurrencyService.
+// Fully dynamic: every specific (language-region) culture is supported, so any visitor's browser locale is
+// honored and prices convert to their currency. There are no .resx resources, so UI text stays English while
+// number/currency formatting follows the visitor's locale. en-NG remains the fallback default.
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    var allSpecificCultures = CultureInfo.GetCultures(CultureTypes.SpecificCultures)
+        .Where(c => !string.IsNullOrEmpty(c.Name))
+        .OrderBy(c => c.Name)
+        .ToArray();
+    options.DefaultRequestCulture = new RequestCulture("en-NG");
+    options.SupportedCultures = allSpecificCultures;
+    options.SupportedUICultures = allSpecificCultures;
+    // default provider order is used: QueryString (?culture=) > Cookie > Accept-Language (browser)
+});
+
+//fallback for non-request contexts (threads/background work)
+CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("en-NG");
+CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("en-NG");
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -96,6 +111,7 @@ builder.Services.AddScoped<IDBInitializer, DBInitializer>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IEmailSender, EmailSender>();
 builder.Services.AddScoped<IStorageService, StorageService>();
+builder.Services.AddScoped<ICurrencyService, CurrencyService>();
 
 var app = builder.Build();
 
@@ -144,6 +160,7 @@ if (!string.IsNullOrWhiteSpace(stripeSecretKey))
 }
 
 app.UseRouting();
+app.UseRequestLocalization();
 app.UseAuthentication();
 app.UseAuthorization();
 

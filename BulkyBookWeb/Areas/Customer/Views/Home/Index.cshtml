@@ -1,4 +1,5 @@
 ﻿@model IEnumerable<Product>
+@inject BulkyBookWeb.Services.ICurrencyService Currency
 
 <div class="row pb-5">
     @foreach (var product in Model)
@@ -26,13 +27,13 @@
                                 <p class="text-dark text-opacity-75 text-center mb-1">
                                     List Price:
                                     <span class="text-decoration-line-through">
-                                        @product.ListPrice.ToString("c")
+                                        @Currency.Format(product.ListPrice)
                                     </span>
                                 </p>
                                 <p class="text-dark text-opacity-75 text-center mb-2">
                                     As low as:
                                     <span>
-                                        @product.Price100.ToString("c")
+                                        @Currency.Format(product.Price100)
                                     </span>
                                 </p>
                             </div>

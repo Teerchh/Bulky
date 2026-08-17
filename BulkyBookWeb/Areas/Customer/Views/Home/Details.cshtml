@@ -1,4 +1,5 @@
 ﻿@model ShoppingCart
+@inject BulkyBookWeb.Services.ICurrencyService Currency
 
 <form method="post" class="mb-5">
     <input hidden asp-for="ProductId" />
@@ -69,7 +70,7 @@
                             <h6 class="text-dark text-opacity-50  pb-2">
                                 List Price:
                                 <span class="text-decoration-line-through">
-                                    @Model.Product.ListPrice.ToString("c")
+                                    @Currency.Format(Model.Product.ListPrice)
                                 </span>
                             </h6>
                         </div>
@@ -92,13 +93,13 @@
                                 <div>@Model.Product.ListPrice</div>
                             </div>
                             <div class="p-1 col-3 col-lg-2 bg-white text-warning fw-bold">
-                                <div>@Model.Product.Price.ToString("c")</div>
+                                <div>@Currency.Format(Model.Product.Price)</div>
                             </div>
                             <div class="p-1 col-3 col-lg-2 bg-white text-warning fw-bold">
-                                <div>@Model.Product.Price50.ToString("c")</div>
+                                <div>@Currency.Format(Model.Product.Price50)</div>
                             </div>
                             <div class="p-1 col-3 col-lg-2 bg-white text-warning fw-bold">
-                                <div>@Model.Product.Price100.ToString("c")</div>
+                                <div>@Currency.Format(Model.Product.Price100)</div>
                             </div>
                         </div>
                         <div class="row pl-2 my-3">
