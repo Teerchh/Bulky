@@ -11,4 +11,7 @@ public class ProductImage
     public int ProductId { get; set; }
     [ForeignKey(nameof(ProductId))]
     public Product Product { get; set; }
+
+    /// <summary>True when this image is the product's front cover (shown on cards/listings).</summary>
+    public bool IsFrontCover { get; set; }
 }

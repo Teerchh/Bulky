@@ -48,6 +48,19 @@ public class ProductController(IUnitOfWork unit, IWebHostEnvironment webHost, IS
     [HttpPost]
     public async Task<IActionResult> Upsert([Bind(Prefix = "Product")] Product product, IEnumerable<IFormFile>? files)
     {
+        //validate uploaded images before touching the database
+        if (files != null)
+        {
+            foreach (var file in files)
+            {
+                var validationError = storage.ValidateImage(file);
+                if (validationError != null)
+                {
+                    ModelState.AddModelError("", $"{file.FileName}: {validationError}");
+                }
+            }
+        }
+
         if (ModelState.IsValid)
         {
             if (product.Id == 0)
@@ -66,6 +79,9 @@ public class ProductController(IUnitOfWork unit, IWebHostEnvironment webHost, IS
 
             if (files != null)
             {
+                //only auto-mark a front cover if the product has no images yet (admin can change it later)
+                var productHasImages = unit.ProductImage.Get(u => u.ProductId == product.Id) != null;
+                var isFirstNewImage = true;
 
                 foreach (var file in files)
                 {
@@ -75,6 +91,7 @@ public class ProductController(IUnitOfWork unit, IWebHostEnvironment webHost, IS
                     {
                         ImageUrl = imageUrl,
                         ProductId = product.Id,
+                        IsFrontCover = !productHasImages && isFirstNewImage,
                     };
 
                     if (product.ProductImages == null)
@@ -83,6 +100,7 @@ public class ProductController(IUnitOfWork unit, IWebHostEnvironment webHost, IS
                     }
                     product.ProductImages.Add(productImage);
 
+                    isFirstNewImage = false;
                 }
 
                 unit.Product.Update(product);
@@ -148,6 +166,29 @@ public class ProductController(IUnitOfWork unit, IWebHostEnvironment webHost, IS
         }
 
         return RedirectToAction(nameof(Upsert), new { id = productid });
+    }
+
+    //mark one image as the product's front cover (clears the flag on all the others)
+    [HttpGet]
+    public IActionResult MakeFrontCover(int imageId)
+    {
+        var image = unit.ProductImage.Get(u => u.Id == imageId);
+        if (image != null)
+        {
+            var product = unit.Product.Get(u => u.Id == image.ProductId, includeProperties: "ProductImages", tracked: true);
+            if (product.ProductImages != null)
+            {
+                foreach (var sibling in product.ProductImages)
+                {
+                    sibling.IsFrontCover = sibling.Id == imageId;
+                }
+                unit.Save();
+                TempData["success"] = "Front cover updated";
+            }
+            return RedirectToAction(nameof(Upsert), new { id = image.ProductId });
+        }
+
+        return RedirectToAction(nameof(Index));
     }
 
     #region APICALLS

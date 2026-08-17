@@ -93,10 +93,15 @@
                         @foreach (var image in Model.Product.ProductImages)
                         {
                             <div class="border p-1 m-2 text-center">
-                                <img src="@image.ImageUrl" class="w-100" style="border-radius: 5px; border:1px solid #bbb9b9" />
-                                <a asp-action="DeleteImage" class="btn btn-danger" asp-route-imageId="@image.Id">
-                                    Delete
-                                </a>
+                                <img src="@image.ImageUrl" class="w-100" style="border-radius: 5px; border:1px solid #bbb9b9" loading="lazy" />
+                                @if (image.IsFrontCover)
+                                {
+                                    <span class="badge bg-success mb-1">Front Cover</span>
+                                }
+                                <div class="d-grid gap-1">
+                                    <a asp-action="MakeFrontCover" class="btn btn-outline-primary btn-sm" asp-route-imageId="@image.Id">Set as front</a>
+                                    <a asp-action="DeleteImage" class="btn btn-danger btn-sm" asp-route-imageId="@image.Id">Delete</a>
+                                </div>
                             </div>
                         }
                     }

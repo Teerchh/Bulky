@@ -6,6 +6,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - BulkyWeb</title>
+    <meta name="description" content="@(ViewData["Description"] ?? "Bulky - an e-commerce demo built with ASP.NET Core 10")" />
+    <meta name="keywords" content="books, e-commerce, shopping, ASP.NET Core, Bulky" />
+    <meta property="og:title" content="@ViewData["Title"] - BulkyWeb" />
+    <meta property="og:description" content="@(ViewData["Description"] ?? "Bulky - an e-commerce demo built with ASP.NET Core 10")" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="BulkyWeb" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/BulkyBookWeb.styles.css" asp-append-version="true" />

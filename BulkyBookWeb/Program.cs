@@ -99,6 +99,25 @@ builder.Services.AddScoped<IStorageService, StorageService>();
 
 var app = builder.Build();
 
+//security headers for every response (CSP + clickjacking + MIME sniffing + referrer policy)
+app.Use(async (context, next) =>
+{
+    var headers = context.Response.Headers;
+    headers.XContentTypeOptions = "nosniff";
+    headers.XFrameOptions = "DENY";
+    headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
+    headers.ContentSecurityPolicy =
+        "default-src 'self'; " +
+        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.datatables.net https://cdn.tiny.cloud; " +
+        "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.datatables.net https://fonts.googleapis.com; " +
+        "img-src 'self' data: https://placehold.co https://*.blob.core.windows.net https://sp.tinymce.com; " +
+        "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; " +
+        "connect-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.datatables.net https://cdn.tiny.cloud; " +
+        "frame-src 'self';";
+    await next();
+});
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -108,7 +127,14 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        // cache static assets (css/js/images/fonts) in the browser for 7 days
+        ctx.Context.Response.Headers.CacheControl = "public, max-age=604800";
+    }
+});
 
 //configure stripe (only set if a key is provided, so the app can still run without payments configured)
 var stripeSecretKey = builder.Configuration.GetSection("Stripe:SecretKey").Get<string>();

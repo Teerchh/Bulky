@@ -13,25 +13,51 @@ public interface IStorageService
 
     /// <summary>Deletes an image by its URL (blob or local path).</summary>
     Task DeleteAsync(string imageUrl);
+
+    /// <summary>Returns an error message if the file is not a valid image, otherwise null.</summary>
+    string? ValidateImage(IFormFile file);
 }
 
-public class StorageService : IStorageService
+public class StorageService(IWebHostEnvironment webHost, IConfiguration configuration) : IStorageService
 {
-    private readonly IWebHostEnvironment _webHost;
-    private readonly string _connectionString;
-    private readonly string _containerName;
+    private static readonly string[] AllowedImageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
+    private static readonly string[] AllowedImageContentTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    private const long MaxImageSizeBytes = 5 * 1024 * 1024; // 5 MB
 
-    public StorageService(IWebHostEnvironment webHost, IConfiguration configuration)
-    {
-        _webHost = webHost;
-        _connectionString = configuration["Storage:ConnectionString"] ?? "";
-        _containerName = configuration["Storage:ContainerName"] ?? "productimages";
-    }
+    private readonly IWebHostEnvironment _webHost = webHost;
+    private readonly string _connectionString = configuration["Storage:ConnectionString"] ?? "";
+    private readonly string _containerName = configuration["Storage:ContainerName"] ?? "productimages";
 
     public bool UseBlobStorage => !string.IsNullOrWhiteSpace(_connectionString);
 
+    public string? ValidateImage(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return "The file is empty.";
+
+        if (file.Length > MaxImageSizeBytes)
+            return "The file exceeds the 5 MB size limit.";
+
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (!AllowedImageExtensions.Contains(extension))
+            return $"The file type '{extension}' is not allowed. Use .jpg, .jpeg, .png, .gif or .webp.";
+
+        if (string.IsNullOrWhiteSpace(file.ContentType) ||
+            !AllowedImageContentTypes.Contains(file.ContentType.ToLowerInvariant()))
+            return $"The content type '{file.ContentType}' is not allowed.";
+
+        return null;
+    }
+
     public async Task<string> SaveImageAsync(IFormFile file, string folder)
     {
+        //defense in depth: never persist a file that failed validation
+        var validationError = ValidateImage(file);
+        if (validationError != null)
+        {
+            throw new ArgumentException(validationError, nameof(file));
+        }
+
         var filename = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
 
         if (UseBlobStorage)
