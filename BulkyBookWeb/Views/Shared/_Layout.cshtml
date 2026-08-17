@@ -21,6 +21,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" />
 
     <link rel="stylesheet" href="//cdn.datatables.net/2.1.8/css/dataTables.dataTables.css" />
+
+    @*Quill rich-text editor (free, no API key)*@
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" />
 </head>
 <body>
     <header>
@@ -106,31 +109,40 @@
     @*sweetalert*@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    @*TinyMCE*@
-    <script src="https://cdn.tiny.cloud/1/x3qg0tnntizmknneifcrvtoc8ihh2rqhfaa4srss7em2q26i/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+    @*Quill rich-text editor (replaces TinyMCE — free, no API key)*@
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
     <script>
-        tinymce.init({
-            selector: 'textarea',
-            plugins: [
-                // Core editing features
-                'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'image', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount',
-                // Your account includes a free trial of TinyMCE premium features
-                // Try the most popular premium features until Nov 12, 2024:
-                'checklist', 'mediaembed', 'casechange', 'export', 'formatpainter', 'pageembed', 'a11ychecker', 'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 'advcode', 'editimage', 'advtemplate', 'ai', 'mentions', 'tinycomments', 'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 'inlinecss', 'markdown',
-                // Early access to document converters
-                'importword', 'exportword', 'exportpdf'
-            ],
-            toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
-            tinycomments_mode: 'embedded',
-            tinycomments_author: 'Author name',
-            mergetags_list: [
-                { value: 'First.Name', title: 'First Name' },
-                { value: 'Email', title: 'Email' },
-            ],
-            ai_request: (request, respondWith) => respondWith.string(() => Promise.reject('See docs to implement AI Assistant')),
-            exportpdf_converter_options: { 'format': 'Letter', 'margin_top': '1in', 'margin_right': '1in', 'margin_bottom': '1in', 'margin_left': '1in' },
-            exportword_converter_options: { 'document': { 'size': 'Letter' } },
-            importword_converter_options: { 'formatting': { 'styles': 'inline', 'resets': 'inline', 'defaults': 'inline', } },
+        // Init Quill on every textarea marked with class="rich-editor".
+        // The textarea is kept (hidden) as the real form field; Quill content is synced back into it.
+        document.querySelectorAll('textarea.rich-editor').forEach(function (ta) {
+            ta.style.display = 'none';
+            var host = document.createElement('div');
+            host.className = 'rich-editor-host shadow-sm';
+            host.style.height = '320px';
+            host.style.marginBottom = '1rem';
+            ta.insertAdjacentElement('afterend', host);
+
+            var quill = new Quill(host, {
+                theme: 'snow',
+                placeholder: 'Write something…',
+                modules: {
+                    toolbar: [
+                        [{ header: [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ list: 'ordered' }, { list: 'bullet' }],
+                        [{ align: [] }],
+                        ['link', 'image', 'blockquote', 'code-block'],
+                        [{ color: [] }, { background: [] }],
+                        ['clean']
+                    ]
+                }
+            });
+
+            // load existing server-rendered content into the editor
+            quill.root.innerHTML = ta.value;
+            // keep the hidden textarea in sync so the form posts the HTML
+            quill.on('text-change', function () { ta.value = quill.root.innerHTML; });
+            ta.form.addEventListener('submit', function () { ta.value = quill.root.innerHTML; });
         });
     </script>
     @await RenderSectionAsync("Scripts", required: false)

@@ -125,11 +125,11 @@ app.Use(async (context, next) =>
     headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
     headers.ContentSecurityPolicy =
         "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.datatables.net https://cdn.tiny.cloud; " +
+        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.datatables.net; " +
         "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.datatables.net https://fonts.googleapis.com; " +
-        "img-src 'self' data: https://placehold.co https://*.blob.core.windows.net https://sp.tinymce.com; " +
+        "img-src 'self' data: https://placehold.co https://*.blob.core.windows.net; " +
         "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; " +
-        "connect-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.datatables.net https://cdn.tiny.cloud; " +
+        "connect-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.datatables.net; " +
         "frame-src 'self';";
     await next();
 });

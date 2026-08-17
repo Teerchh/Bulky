@@ -21,7 +21,7 @@
                         </div>
                         <div class="py-2 col-12">
                             <label asp-for="Product.Description" class="ms-2 text-muted"></label>
-                            <textarea asp-for="Product.Description" class="form-control border-0 shadow"></textarea>
+                            <textarea asp-for="Product.Description" class="form-control border-0 shadow rich-editor"></textarea>
                         </div>
                         <div class="form-floating py-2 col-12">
                             <input asp-for="Product.ISBN" class="form-control border-0 shadow" />
@@ -114,9 +114,3 @@
 @section Scripts {
     @await Html.PartialAsync("_ValidationScriptsPartial")
 }
-
-@* <script>
-    tinymce.init({
-      selector: 'textarea#tiny'
-    });
-</script> *@
