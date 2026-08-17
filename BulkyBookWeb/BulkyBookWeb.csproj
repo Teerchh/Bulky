@@ -14,9 +14,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Extensions.AspNetCore.DataProtection.Blobs" Version="1.5.3" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.29.1" />
     <PackageReference Include="datatables.net-bs5" Version="2.1.8" />
     <PackageReference Include="jQuery" Version="3.7.1" />
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="3.1.2" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.11" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.11" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="10.0.11" />

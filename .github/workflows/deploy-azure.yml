@@ -32,6 +32,13 @@ jobs:
       - name: Publish
         run: dotnet publish "BulkyBookWeb/BulkyBookWeb.csproj" --configuration ${{ env.CONFIGURATION }} --no-build --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
 
+      - name: Apply database migrations
+        env:
+          ConnectionStrings__DefaultConnection: ${{ secrets.DB_CONNECTION_STRING }}
+        run: |
+          dotnet tool install --global dotnet-ef
+          dotnet ef database update --project "Bulky.DataAccess/Bulky.DataAccess.csproj" --startup-project "BulkyBookWeb/BulkyBookWeb.csproj"
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:

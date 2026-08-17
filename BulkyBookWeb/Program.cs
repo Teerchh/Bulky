@@ -2,8 +2,10 @@ using Bulky.DataAccess.Data;
 using Bulky.DataAccess.DBInitializer;
 using Bulky.DataAccess.Repository;
 using Bulky.DataAccess.Repository.IRepository;
+using Azure.Storage.Blobs;
 using Bulky.Utility;
 using BulkyBookWeb.Services;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
@@ -23,13 +25,28 @@ CultureInfo.DefaultThreadCurrentUICulture = appCulture;
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
-builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(
+    builder.Configuration.GetConnectionString("DefaultConnection"),
+    npg => npg.EnableRetryOnFailure()));
 
 //injects values of stripe in appsettings.json into stripesettings properties
 builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
 
 //injects storage settings (Azure Blob Storage) into StorageSettings
 builder.Services.Configure<StorageSettings>(builder.Configuration.GetSection("Storage"));
+
+//health checks - expose /health for uptime monitoring + App Service health checks
+builder.Services.AddHealthChecks();
+
+//Application Insights telemetry (only enabled when a connection string is configured)
+// - On Azure: set APPLICATIONINSIGHTS_CONNECTION_STRING (or enable via portal "Application Insights")
+// - Locally: left unset, so telemetry stays disabled and startup never fails
+var appInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]
+    ?? builder.Configuration["ApplicationInsights:ConnectionString"];
+if (!string.IsNullOrWhiteSpace(appInsightsConnectionString))
+{
+    builder.Services.AddApplicationInsightsTelemetry();
+}
 
 //add identity
 builder.Services.AddIdentity<IdentityUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
@@ -54,6 +71,18 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.LogoutPath = $"/Identity/Account/Logout";
     options.AccessDeniedPath = $"/Identity/Account/AccessDenied";
 });
+
+//persist Data Protection keys to Blob Storage so auth cookies survive app restarts
+//(only when Blob Storage is configured; keys live in a separate private container)
+var storageConnectionString = builder.Configuration["Storage:ConnectionString"];
+if (!string.IsNullOrWhiteSpace(storageConnectionString))
+{
+    var keysContainer = new BlobContainerClient(storageConnectionString, "dataprotection");
+    keysContainer.CreateIfNotExistsAsync().GetAwaiter().GetResult();
+    builder.Services.AddDataProtection()
+        .SetApplicationName("BulkyWeb")
+        .PersistKeysToAzureBlobStorage(keysContainer.GetBlobClient("dataprotection-keys.xml"));
+}
 
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
@@ -98,7 +127,14 @@ app.MapControllerRoute(
         name: "default",
         pattern: "{area=Customer}/{controller=Home}/{action=Index}/{id?}");
 
-SeedDatabase();
+app.MapHealthChecks("/health");
+
+//Run migrations + seed only in Development. In production, migrations are applied by the
+//CI/CD pipeline, so a slow/failing database can never take the site down at startup.
+if (app.Environment.IsDevelopment())
+{
+    SeedDatabase();
+}
 
 app.MapRazorPages();
 
